@@ -43,7 +43,7 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
+        self.val_loss_min = np.inf
         self.delta = delta
         self.save_mode = save_mode
 
@@ -152,7 +152,13 @@ def vali(args, accelerator, model, vali_data, vali_loader, criterion, mae_metric
                 accelerator.device)
             # encoder - decoder
             if args.use_amp:
-                with torch.cuda.amp.autocast():
+                if torch.cuda.is_available():
+                    device_type = 'cuda'
+                elif torch.backends.mps.is_available():
+                    device_type = 'mps'
+                else:
+                    device_type = 'cpu'
+                with torch.amp.autocast(device_type=device_type):
                     if args.output_attention:
                         outputs = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                     else:

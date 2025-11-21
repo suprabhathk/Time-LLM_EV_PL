@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from transformers import LlamaConfig, LlamaModel, LlamaTokenizer, GPT2Config, GPT2Model, GPT2Tokenizer, BertConfig, \
-    BertModel, BertTokenizer
+    BertModel, BertTokenizer, GemmaConfig, GemmaModel, GemmaTokenizer
 from layers.Embed import PatchEmbedding
 import transformers
 from layers.StandardNorm import Normalize
@@ -150,6 +150,43 @@ class Model(nn.Module):
                     trust_remote_code=True,
                     local_files_only=False
                 )
+        elif configs.llm_model == 'GEMMA':
+            from transformers import GemmaConfig, GemmaModel, GemmaTokenizer
+            
+            self.gemma_config = GemmaConfig.from_pretrained('google/gemma-3-270m')
+            self.gemma_config.num_hidden_layers = configs.llm_layers
+            self.gemma_config.output_attentions = True
+            self.gemma_config.output_hidden_states = True
+            
+            try:
+                self.llm_model = GemmaModel.from_pretrained(
+                    'google/gemma-3-270m',
+                    trust_remote_code=True,
+                    local_files_only=True,
+                    config=self.gemma_config,
+                )
+            except EnvironmentError:
+                print("Local model files not found. Attempting to download...")
+                self.llm_model = GemmaModel.from_pretrained(
+                    'google/gemma-3-270m',
+                    trust_remote_code=True,
+                    local_files_only=False,
+                    config=self.gemma_config,
+                )
+            
+            try:
+                self.tokenizer = GemmaTokenizer.from_pretrained(
+                    'google/gemma-3-270m',
+                    trust_remote_code=True,
+                    local_files_only=True
+                )
+            except EnvironmentError:
+                print("Local tokenizer files not found. Attempting to download them..")
+                self.tokenizer = GemmaTokenizer.from_pretrained(
+                    'google/gemma-3-270m',
+                    trust_remote_code=True,
+                    local_files_only=False
+                )            
         else:
             raise Exception('LLM model is not defined')
 
@@ -237,7 +274,7 @@ class Model(nn.Module):
         source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0)).permute(1, 0)
 
         x_enc = x_enc.permute(0, 2, 1).contiguous()
-        enc_out, n_vars = self.patch_embedding(x_enc.to(torch.bfloat16))
+        enc_out, n_vars = self.patch_embedding(x_enc.float())
         enc_out = self.reprogramming_layer(enc_out, source_embeddings, source_embeddings)
         llama_enc_out = torch.cat([prompt_embeddings, enc_out], dim=1)
         dec_out = self.llm_model(inputs_embeds=llama_enc_out).last_hidden_state

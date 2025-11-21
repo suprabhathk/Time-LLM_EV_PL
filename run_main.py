@@ -1,6 +1,6 @@
 import argparse
 import torch
-from accelerate import Accelerator, DeepSpeedPlugin
+from accelerate import Accelerator
 from accelerate import DistributedDataParallelKwargs
 from torch import nn, optim
 from torch.optim import lr_scheduler
@@ -18,6 +18,9 @@ os.environ['CURL_CA_BUNDLE'] = ''
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:64"
 
 from utils.tools import del_files, EarlyStopping, adjust_learning_rate, vali, load_content
+
+# Force float32 for MPS compatibility
+torch.set_default_dtype(torch.float32)
 
 parser = argparse.ArgumentParser(description='Time-LLM')
 
@@ -77,8 +80,10 @@ parser.add_argument('--output_attention', action='store_true', help='whether to 
 parser.add_argument('--patch_len', type=int, default=16, help='patch length')
 parser.add_argument('--stride', type=int, default=8, help='stride')
 parser.add_argument('--prompt_domain', type=int, default=0, help='')
-parser.add_argument('--llm_model', type=str, default='LLAMA', help='LLM model') # LLAMA, GPT2, BERT
-parser.add_argument('--llm_dim', type=int, default='4096', help='LLM model dimension')# LLama7b:4096; GPT2-small:768; BERT-base:768
+parser.add_argument('--llm_model', type=str, default='LLAMA', help='LLM model') # LLAMA, GPT2, BERT, GEMMA
+parser.add_argument('--llm_dim', type=int, default='4096', help='LLM model dimension')# LLama7b:4096; GPT2-small:768; BERT-base:768; Gemma-3-270m:640
+
+
 
 
 # optimization
@@ -100,8 +105,9 @@ parser.add_argument('--percent', type=int, default=100)
 
 args = parser.parse_args()
 ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
-deepspeed_plugin = DeepSpeedPlugin(hf_ds_config='./ds_config_zero2.json')
-accelerator = Accelerator(kwargs_handlers=[ddp_kwargs], deepspeed_plugin=deepspeed_plugin)
+#deepspeed_plugin = DeepSpeedPlugin(hf_ds_config='./ds_config_zero2.json')
+#accelerator = Accelerator(kwargs_handlers=[ddp_kwargs], deepspeed_plugin=deepspeed_plugin)
+accelerator = Accelerator(kwargs_handlers=[ddp_kwargs])
 
 for ii in range(args.itr):
     # setting record of experiments
@@ -127,6 +133,8 @@ for ii in range(args.itr):
     vali_data, vali_loader = data_provider(args, 'val')
     test_data, test_loader = data_provider(args, 'test')
 
+    args.content = load_content(args)
+
     if args.model == 'Autoformer':
         model = Autoformer.Model(args).float()
     elif args.model == 'DLinear':
@@ -136,8 +144,9 @@ for ii in range(args.itr):
 
     path = os.path.join(args.checkpoints,
                         setting + '-' + args.model_comment)  # unique checkpoint saving path
-    args.content = load_content(args)
+
     if not os.path.exists(path) and accelerator.is_local_main_process:
+        print('path is', path)
         os.makedirs(path)
 
     time_now = time.time()
@@ -168,8 +177,14 @@ for ii in range(args.itr):
         train_loader, vali_loader, test_loader, model, model_optim, scheduler)
 
     if args.use_amp:
-        scaler = torch.cuda.amp.GradScaler()
-
+        # Use device-agnostic GradScaler
+        if torch.cuda.is_available():
+            device_type = 'cuda'
+        elif torch.backends.mps.is_available():
+            device_type = 'mps'
+        else:
+            device_type = 'cpu'
+        scaler = torch.amp.GradScaler(device_type)
     for epoch in range(args.train_epochs):
         iter_count = 0
         train_loss = []
@@ -193,7 +208,14 @@ for ii in range(args.itr):
 
             # encoder - decoder
             if args.use_amp:
-                with torch.cuda.amp.autocast():
+                # Use device-agnostic autocast
+                if torch.cuda.is_available():
+                    device_type = 'cuda'
+                elif torch.backends.mps.is_available():
+                    device_type = 'mps'
+                else:
+                    device_type = 'cpu'
+                with torch.amp.autocast(device_type=device_type):
                     if args.output_attention:
                         outputs = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
                     else:
@@ -264,7 +286,7 @@ for ii in range(args.itr):
             accelerator.print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
 
 accelerator.wait_for_everyone()
-if accelerator.is_local_main_process:
-    path = './checkpoints'  # unique checkpoint saving path
-    del_files(path)  # delete checkpoint files
-    accelerator.print('success delete checkpoints')
+#if accelerator.is_local_main_process:
+#    path = './checkpoints'  # unique checkpoint saving path
+#    del_files(path)  # delete checkpoint files
+#    accelerator.print('success delete checkpoints')
