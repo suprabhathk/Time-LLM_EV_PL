@@ -1,0 +1,1 @@
+This is synthetic epidemic time series data from an age-structured SEIR model simulating H1N1 influenza spread. The data contains daily counts of Susceptible, Exposed, Infectious, and Recovered individuals across different age groups, with epidemic dynamics driven by time-varying contact patterns during school terms and holidays.

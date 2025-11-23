@@ -1,0 +1,38 @@
+# Model checkpoints (too large for git)
+checkpoints/
+results/
+
+# Large checkpoint files anywhere
+*.pth
+*.ckpt
+
+# Python cache
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Environment
+.env
+.venv
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large data files (optional - uncomment if weather.csv is huge)
+dataset/weather/weather.csv

@@ -1,0 +1,195 @@
+{
+  "generation_timestamp": "2025-11-21T16:36:21.777459",
+  "model_info": {
+    "model_type": "H1N1AgeStructuredModel",
+    "n_compartments": 8,
+    "n_age_groups": 2,
+    "state_names": [
+      "S_0-18",
+      "S_19-65+",
+      "E_0-18",
+      "E_19-65+",
+      "I_0-18",
+      "I_19-65+",
+      "R_0-18",
+      "R_19-65+"
+    ],
+    "age_groups": [
+      "0-18",
+      "19-65+"
+    ]
+  },
+  "configuration": {
+    "model_name": "h1n1_age_structured",
+    "description": "Extended H1N1 epidemic lasting several months",
+    "disease_params": {
+      "transmission_rate": 0.012,
+      "latent_period": 1.0,
+      "infectious_period": 4
+    },
+    "population": {
+      "age_groups": [
+        "0-18",
+        "19-65+"
+      ],
+      "sizes": [
+        2000,
+        8000
+      ]
+    },
+    "contact_patterns": {
+      "term_time": [
+        [
+          22.0,
+          10.0
+        ],
+        [
+          3.0,
+          13.0
+        ]
+      ],
+      "holidays": [
+        [
+          11.0,
+          11.5
+        ],
+        [
+          2.0,
+          14.0
+        ]
+      ]
+    },
+    "school_calendar": {
+      "term_periods": [
+        [
+          1,
+          70
+        ],
+        [
+          100,
+          180
+        ],
+        [
+          210,
+          300
+        ],
+        [
+          330,
+          365
+        ]
+      ],
+      "holiday_periods": [
+        [
+          71,
+          99
+        ],
+        [
+          181,
+          209
+        ],
+        [
+          301,
+          329
+        ]
+      ]
+    },
+    "initial_conditions": {
+      "susceptible": [
+        1990,
+        7970
+      ],
+      "exposed": [
+        0,
+        0
+      ],
+      "infected": [
+        1,
+        1
+      ],
+      "recovered": [
+        9,
+        29
+      ]
+    },
+    "simulation": {
+      "duration": 365,
+      "timestep": 0.1,
+      "output_frequency": 1,
+      "solver": {
+        "method": "RK45",
+        "rtol": 1e-06,
+        "atol": 1e-08
+      }
+    },
+    "output": {
+      "path": "../dataset/synthetic/h1n1/",
+      "filename": "h1n1_2group_extended.csv",
+      "save_metadata": true,
+      "metadata_filename": "h1n1_2group_extended_metadata.json",
+      "start_date": "2024-01-01",
+      "date_format": "%Y-%m-%d",
+      "save_compartments": true,
+      "save_totals": true,
+      "save_incidence": true,
+      "save_prevalence": true
+    },
+    "noise": {
+      "enabled": false,
+      "type": "poisson",
+      "level": 0.1,
+      "seed": 42
+    },
+    "multiple_runs": {
+      "enabled": false,
+      "n_runs": 10
+    },
+    "interventions": {
+      "enabled": false
+    },
+    "validation": {
+      "check_population_constant": true,
+      "check_negative_values": true,
+      "check_conservation": true
+    }
+  },
+  "solution_info": {
+    "success": true,
+    "message": "The solver successfully reached the end of the integration interval.",
+    "n_timepoints": 366,
+    "duration": 365.0
+  },
+  "output_info": {
+    "n_rows": 366,
+    "n_columns": 15,
+    "columns": [
+      "date",
+      "S_0-18",
+      "S_19-65+",
+      "E_0-18",
+      "E_19-65+",
+      "I_0-18",
+      "I_19-65+",
+      "R_0-18",
+      "R_19-65+",
+      "total_I",
+      "total_R",
+      "total_E",
+      "total_S",
+      "daily_incidence",
+      "prevalence"
+    ],
+    "date_range": {
+      "start": "2024-01-01",
+      "end": "2024-12-31"
+    }
+  },
+  "summary_statistics": {
+    "peak_infections": {
+      "total": 24.287211836177395,
+      "day": 181,
+      "date": "2024-06-30"
+    },
+    "total_infected": 826.8349579041987,
+    "attack_rate": 0.08268349579041988
+  }
+}
