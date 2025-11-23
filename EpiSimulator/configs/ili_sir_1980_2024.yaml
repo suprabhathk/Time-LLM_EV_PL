@@ -4,113 +4,39 @@
 # Influenza-Like Illness (ILI) synthetic data generation
 # Period: 1980-2024 (weekly aggregation)
 
-model_name: "ili_sir_seasonal"
-description: "Simple SIR model for ILI with seasonal forcing (1980-2024)"
+# EpiSimulator/configs/ili_sir_1980_2024.yaml
 
-# ============================================
-# DISEASE DYNAMICS PARAMETERS
-# ============================================
-disease_params:
-  transmission_rate: 0.5       # β - base contact rate per day
-  recovery_rate: 0.143         # γ - recovery rate (1/7 days = 1 week recovery)
+model: ILI_SIR 
 
-  # These are auto-calculated from above:
-  # R0 = β/γ = 0.5/0.143 ≈ 3.5 (basic reproduction number)
-
-  # Seasonal forcing parameters
-  seasonal_amplitude: 0.3      # 30% variation in transmission
-  seasonal_peak_week: 2        # Peak in early January (week 2)
-
-# ============================================
-# POPULATION STRUCTURE
-# ============================================
-population:
-  total: 330000000             # US population (approximate)
-
-  # Note: Single population (no age stratification)
-
-# ============================================
-# INITIAL CONDITIONS (at t=0)
-# ============================================
-initial_conditions:
-  susceptible: 0.99            # 99% of population susceptible
-  infected: 0.01               # 1% initially infected
-  recovered: 0.00              # 0% recovered/immune
-
-  # Absolute numbers calculated as:
-  # S(0) = 326,700,000
-  # I(0) = 3,300,000
-  # R(0) = 0
-
-# ============================================
-# SIMULATION PARAMETERS
-# ============================================
+# 🚨 REQUIRED SECTION (Must be spelled 'simulation'):
 simulation:
-  duration: 16436              # days (1980-01-01 to 2024-12-31 ≈ 45 years)
-  timestep: 0.1                # days (for ODE solver)
-  output_frequency: 1          # Save output every N days (1 = daily)
-  aggregation: "weekly"        # Aggregate daily to weekly
+    duration: 365
+    timestep: 0.1
+    solver: RK45
+    output_frequency: 1
 
-  # ODE Solver settings
-  solver:
-    method: "RK45"             # Options: RK45, LSODA, RK23, DOP853, Radau, BDF
-    rtol: 1.0e-6              # Relative tolerance
-    atol: 1.0e-8              # Absolute tolerance
+# --- Disease Parameters ---
+disease_params:
+    transmission_rate: 0.2     
+    recovery_rate: 0.1         
+    latent_period: 1.0         
+    infectious_period: 10.0
 
-# ============================================
-# OUTPUT SETTINGS
-# ============================================
+# --- Population Structure ---
+population:
+    age_groups: ['all_ages']
+    sizes: [10000]
+
+# --- Initial Conditions ---
+initial_conditions:
+    susceptible: [9990]
+    infected: [10]
+    recovered: [0]
+    exposed: [0] 
+
+# --- Output Settings ---
 output:
-  path: "./dataset/synthetic/ili/"
-  filename: "ili_1980_2024.csv"
-
-  # Save configuration alongside results
-  save_metadata: true
-  metadata_filename: "ili_1980_2024_metadata.json"
-
-  # Date settings for TimeLLM compatibility
-  start_date: "1980-01-01"     # Starting date for CSV
-  date_format: "%Y-%m-%d"      # Date format
-
-  # What to save in CSV
-  save_compartments: true      # S, I, R
-  save_totals: true           # total_I, total_S, total_R
-  save_incidence: true        # New infections per day/week
-  save_prevalence: true       # I / Total population
-
-# ============================================
-# SEASONAL FORCING
-# ============================================
-# Transmission rate varies seasonally:
-# β(t) = β_base × (1 + A × cos(2π(week - peak_week)/52))
-#
-# This creates:
-# - Winter peaks (high transmission around week 2, early January)
-# - Summer troughs (low transmission around week 28, mid-July)
-# - Annual periodicity matching flu season patterns
-
-# ============================================
-# NOISE/STOCHASTICITY (Optional)
-# ============================================
-noise:
-  enabled: false               # Set to true to add observation noise
-  type: "poisson"             # Options: gaussian, poisson
-  level: 0.05                 # Noise intensity (0.05 = 5%)
-  seed: 42                    # Random seed for reproducibility
-
-# ============================================
-# VALIDATION
-# ============================================
-validation:
-  check_population_constant: true   # Verify S+I+R = constant
-  check_negative_values: true       # Error if any compartment < 0
-  check_conservation: true          # Mass balance checks
-
-# ============================================
-# NOTES
-# ============================================
-# - This is a simple SIR model (no latent/exposed compartment)
-# - Seasonal forcing creates realistic winter flu peaks
-# - Weekly aggregation gives ~2,348 data points (1980-2024)
-# - Suitable for time series forecasting with TimeLLM
-
+    directory: ./dataset/synthetic/ili_sir/
+    file_name: ili_sir_output.csv
+    
+# ... (contact_patterns and school_calendar should remain if needed by validation logic)

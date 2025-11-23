@@ -14,8 +14,15 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from models.h1n1_age_structured import H1N1AgeStructuredModel
+from models.ili_sir import ILI_SIR_Model
 from solvers.scipy_solver import ODESolver
 from generators.time_series import TimeSeriesGenerator
+
+# Model Mapping Dictionary
+MODEL_MAPPING = {
+    'H1N1_SEIR': H1N1AgeStructuredModel,
+    'ILI_SIR': ILI_SIR_Model,  # <--- ADD/UPDATE THIS DICTIONARY ENTRY
+}
 
 
 def load_config(config_path):
@@ -64,7 +71,7 @@ def run_simulation(config):
     
     # Step 1: Initialize model
     print("\n[1/4] Initializing epidemic model...")
-    model = H1N1AgeStructuredModel(config)
+    model = ILI_SIR_Model(config)
     print(f"✓ Model initialized: {model.get_model_info()['model_type']}")
     print(f"  Age groups: {model.get_age_groups()}")
     print(f"  Total population: {model.population_sizes.sum():.0f}")

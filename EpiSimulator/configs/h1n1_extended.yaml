@@ -3,6 +3,7 @@
 # Designed for longer-lasting epidemic
 # ============================================
 
+model: H1N1_SEIR
 model_name: "h1n1_age_structured"
 description: "Extended H1N1 epidemic lasting several months"
 
