@@ -232,8 +232,9 @@ def test(args, accelerator, model, train_loader, vali_loader, criterion):
 def load_content(args):
     if 'ETT' in args.data:
         file = 'ETT'
+    elif args.data == 'custom':
+        file = 'Epidemic'
+    elif args.data == 'Epi_SEIR':
+        file = 'Epi_SEIR'  # Look for Epi_SEIR.txt
     else:
         file = args.data
-    with open('./dataset/prompt_bank/{0}.txt'.format(file), 'r') as f:
-        content = f.read()
-    return content

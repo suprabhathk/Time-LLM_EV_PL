@@ -1,0 +1,122 @@
+# ============================================
+# H1N1 Extended Epidemic Configuration
+# Designed for longer-lasting epidemic
+# ============================================
+
+model_name: "h1n1_age_structured"
+description: "Extended H1N1 epidemic lasting several months"
+
+# ============================================
+# DISEASE DYNAMICS PARAMETERS
+# ============================================
+disease_params:
+  transmission_rate: 0.012      # Much lower (was 0.028)
+  latent_period: 1.0
+  infectious_period: 4
+
+# ============================================
+# POPULATION STRUCTURE
+# ============================================
+population:
+  age_groups:
+    - "0-18"
+    - "19-65+"
+  
+  sizes: [2000, 8000]
+
+# ============================================
+# CONTACT MATRICES
+# ============================================
+contact_patterns:
+  # Term time - SLIGHTLY REDUCED contacts
+  term_time:
+    - [22.0, 10.0]    # Reduced from [25.0, 11.0]
+    - [3.0, 13.0]     # Reduced from [3.5, 14.5]
+  
+  # Holidays - keep similar
+  holidays:
+    - [11.0, 11.5]
+    - [2.0, 14.0]
+
+# ============================================
+# SCHOOL CALENDAR - MORE HOLIDAYS
+# ============================================
+school_calendar:
+  # More frequent breaks to slow transmission
+  term_periods:
+    - [1, 70]         # Term 1: 70 days
+    - [100, 180]      # Term 2: 80 days
+    - [210, 300]      # Term 3: 90 days
+    - [330, 365]      # Term 4: 35 days
+  
+  holiday_periods:
+    - [71, 99]        # Holiday 1: 29 days
+    - [181, 209]      # Holiday 2: 29 days
+    - [301, 329]      # Holiday 3: 29 days
+
+# ============================================
+# INITIAL CONDITIONS
+# ============================================
+initial_conditions:
+  susceptible: [1990, 7970]    # More susceptibles (99%)
+  exposed: [0, 0]
+  infected: [1, 1]             # Small seed
+  recovered: [9, 29]          # Very low prior immunity (~0.5%)
+
+# ============================================
+# SIMULATION PARAMETERS
+# ============================================
+simulation:
+  duration: 365
+  timestep: 0.1
+  output_frequency: 1
+  
+  solver:
+    method: "RK45"
+    rtol: 1.0e-6
+    atol: 1.0e-8
+
+# ============================================
+# OUTPUT SETTINGS
+# ============================================
+output:
+  path: "../dataset/synthetic/h1n1/"
+  filename: "h1n1_2group_extended.csv"
+  save_metadata: true
+  metadata_filename: "h1n1_2group_extended_metadata.json"
+  start_date: "2024-01-01"
+  date_format: "%Y-%m-%d"
+  save_compartments: true
+  save_totals: true
+  save_incidence: true
+  save_prevalence: true
+
+# ============================================
+# NOISE/STOCHASTICITY
+# ============================================
+noise:
+  enabled: false
+  type: "poisson"
+  level: 0.1
+  seed: 42
+
+# ============================================
+# MULTIPLE RUNS
+# ============================================
+multiple_runs:
+  enabled: false
+  n_runs: 10
+
+# ============================================
+# INTERVENTIONS
+# ============================================
+interventions:
+  enabled: false
+
+# ============================================
+# VALIDATION
+# ============================================
+validation:
+  check_population_constant: true
+  check_negative_values: true
+  check_conservation: true

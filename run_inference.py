@@ -171,17 +171,31 @@ def main():
     print(f"\nInference complete!")
     print(f"Predictions shape: {preds.shape}")
     print(f"True values shape: {trues.shape}")
+
+    # ADD THESE LINES HERE:
+    # Inverse transform to original scale using the dataset's scaler
+    print("\nInverse transforming to original scale...")
+    preds_reshaped = preds.reshape(-1, preds.shape[-1])
+    trues_reshaped = trues.reshape(-1, trues.shape[-1])
+    
+    preds_original = test_data.scaler.inverse_transform(preds_reshaped).reshape(preds.shape)
+    trues_original = test_data.scaler.inverse_transform(trues_reshaped).reshape(trues.shape)
+    
+    print(f"Predictions shape (original scale): {preds_original.shape}")
+    print(f"True values shape (original scale): {trues_original.shape}")
+    print(f"Prediction range: [{preds_original.min():.4f}, {preds_original.max():.4f}]")
+    print(f"True values range: [{trues_original.min():.4f}, {trues_original.max():.4f}]")
     
     # Calculate overall metrics
     print("\nCalculating metrics...")
-    metrics = calculate_metrics(preds, trues)
+    metrics = calculate_metrics(preds_original, trues_original)
     
     # Create output directory
     os.makedirs(args.output_path, exist_ok=True)
     
     # Save predictions and true values
-    np.save(os.path.join(args.output_path, 'predictions.npy'), preds)
-    np.save(os.path.join(args.output_path, 'true_values.npy'), trues)
+    np.save(os.path.join(args.output_path, 'predictions.npy'), preds_original)
+    np.save(os.path.join(args.output_path, 'true_values.npy'), trues_original)
     print(f"\nSaved predictions to: {args.output_path}")
     
     # Save overall metrics to text file
@@ -197,8 +211,8 @@ def main():
         f.write(f"RMSE:  {metrics['RMSE']:.6f}\n")
         f.write(f"MSE:   {metrics['MSE']:.6f}\n")
         f.write("\n" + "="*60 + "\n")
-        f.write(f"Predictions shape: {preds.shape}\n")
-        f.write(f"True values shape: {trues.shape}\n")
+        f.write(f"Predictions shape: {preds_original.shape}\n")
+        f.write(f"True values shape: {trues_original.shape}\n")
         f.write("="*60 + "\n")
     
     # Save metrics as CSV
@@ -216,8 +230,8 @@ def main():
     with open(per_horizon_file, 'w') as f:
         f.write("Horizon,MAE,MAPE\n")
         for h in range(args.pred_len):
-            preds_h = preds[:, h, :].flatten()
-            trues_h = trues[:, h, :].flatten()
+            preds_h = preds_original[:, h, :].flatten()
+            trues_h = trues_original[:, h, :].flatten()
             
             mae_h = np.mean(np.abs(preds_h - trues_h))
             mape_h = np.mean(np.abs((trues_h - preds_h) / (np.abs(trues_h) + 1e-8))) * 100
@@ -239,9 +253,9 @@ def main():
     print("-" * 35)
     
     for h in range(args.pred_len):
-        preds_h = preds[:, h, :].flatten()
-        trues_h = trues[:, h, :].flatten()
-        
+        preds_h = preds_original[:, h, :].flatten()
+        trues_h = trues_original[:, h, :].flatten()
+
         mae_h = np.mean(np.abs(preds_h - trues_h))
         mape_h = np.mean(np.abs((trues_h - preds_h) / (np.abs(trues_h) + 1e-8))) * 100
         
