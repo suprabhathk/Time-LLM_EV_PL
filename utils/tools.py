@@ -236,5 +236,53 @@ def load_content(args):
         file = 'Epidemic'
     elif args.data == 'Epi_SEIR':
         file = 'Epi_SEIR'  # Look for Epi_SEIR.txt
+    elif args.data == 'Age_SIR':
+        file = 'Age_SIR'          
     else:
         file = args.data
+    try:
+        with open(f'./dataset/prompt_bank/{file}.txt', 'r') as f:
+              content = f.read()
+    except:
+          print(f'Warning: prompt file ./dataset/prompt_bank/{file}.txt not found')
+          content = ''
+    return content    
+
+
+# Add these to the end of suprabhathk/time-llm_ev_pl/Time-LLM_EV_PL-claude-gemma-integration/utils/tools.py
+
+def visual_loss(train_loss, vali_loss, path):
+    """
+    Saves a plot of the training and validation loss over epochs.
+    """
+    plt.figure(figsize=(10, 5))
+    plt.title("Training and Validation Loss Curve")
+    plt.plot(train_loss, label="Training Loss")
+    plt.plot(vali_loss, label="Validation Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss (MSE)")
+    plt.legend()
+    plt.grid(True)
+    
+    save_path = os.path.join(path, "loss_curve.png")
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Loss curve saved to: {save_path}")
+
+def visualize_forecast(preds, trues, output_path, num_samples=3):
+    """
+    Plots a comparison between predictions and actual values for a few samples.
+    """
+    for i in range(min(num_samples, len(preds))):
+        plt.figure(figsize=(12, 6))
+        # Plotting the first feature (index 0)
+        plt.plot(trues[i, :, 0], label='Ground Truth', color='blue', linewidth=2)
+        plt.plot(preds[i, :, 0], label='Time-LLM Prediction', color='red', linestyle='--', linewidth=2)
+        plt.title(f'Forecast Comparison - Sample {i}')
+        plt.xlabel('Time Steps (Future)')
+        plt.ylabel('Value')
+        plt.legend()
+        plt.grid(True)
+        
+        plt.savefig(os.path.join(output_path, f'forecast_sample_{i}.png'))
+        plt.close()

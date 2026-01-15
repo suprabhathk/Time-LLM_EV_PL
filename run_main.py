@@ -188,6 +188,8 @@ for ii in range(args.itr):
     for epoch in range(args.train_epochs):
         iter_count = 0
         train_loss = []
+        train_loss_history = []
+        vali_loss_history = []
 
         model.train()
         epoch_time = time.time()
@@ -226,6 +228,8 @@ for ii in range(args.itr):
                     batch_y = batch_y[:, -args.pred_len:, f_dim:].to(accelerator.device)
                     loss = criterion(outputs, batch_y)
                     train_loss.append(loss.item())
+                    train_loss_history.append(train_loss) # New stuff
+                    vali_loss_history.append(vali_loss) # New stuff
             else:
                 if args.output_attention:
                     outputs = model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
@@ -237,6 +241,8 @@ for ii in range(args.itr):
                 batch_y = batch_y[:, -args.pred_len:, f_dim:]
                 loss = criterion(outputs, batch_y)
                 train_loss.append(loss.item())
+                train_loss_history.append(train_loss) # New stuff
+                vali_loss_history.append(vali_loss) # New stuff
 
             if (i + 1) % 100 == 0:
                 accelerator.print(
@@ -284,6 +290,11 @@ for ii in range(args.itr):
 
         else:
             accelerator.print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
+
+        # New stuff
+        if accelerator.is_local_main_process:
+            from utils.tools import visual_loss
+            visual_loss(train_loss_history, vali_loss_history, path)
 
 accelerator.wait_for_everyone()
 #if accelerator.is_local_main_process:

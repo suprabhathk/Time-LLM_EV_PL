@@ -7,6 +7,7 @@ from accelerate import Accelerator
 from models import TimeLLM
 from data_provider.data_factory import data_provider
 from utils.tools import load_content
+from utils.tools import visualize_forecast #New stuff
 
 
 
@@ -172,20 +173,37 @@ def main():
     print(f"Predictions shape: {preds.shape}")
     print(f"True values shape: {trues.shape}")
 
-    # ADD THESE LINES HERE:
-    # Inverse transform to original scale using the dataset's scaler
+# Corrected Inverse transform logic - New stuff
     print("\nInverse transforming to original scale...")
+    
+    # 1. Reshape for scaler (Batch * Seq, Features)
     preds_reshaped = preds.reshape(-1, preds.shape[-1])
     trues_reshaped = trues.reshape(-1, trues.shape[-1])
-    
-    preds_original = test_data.scaler.inverse_transform(preds_reshaped).reshape(preds.shape)
-    trues_original = test_data.scaler.inverse_transform(trues_reshaped).reshape(trues.shape)
-    
-    print(f"Predictions shape (original scale): {preds_original.shape}")
-    print(f"True values shape (original scale): {trues_original.shape}")
-    print(f"Prediction range: [{preds_original.min():.4f}, {preds_original.max():.4f}]")
-    print(f"True values range: [{trues_original.min():.4f}, {trues_original.max():.4f}]")
-    
+
+    # 2. Handle dimension mismatch (e.g., MS task where we predict 1 col but scaler expects 7)
+    if preds_reshaped.shape[-1] != test_data.scaler.mean_.shape[0]:
+        print(f"Aligning dimensions: {preds_reshaped.shape[-1]} -> {test_data.scaler.mean_.shape[0]}")
+        
+        # Create dummy arrays to satisfy the scaler's expected input shape
+        def pad_to_scaler(data, scaler, target_idx=-1):
+            dummy = np.zeros((len(data), scaler.mean_.shape[0]))
+            dummy[:, target_idx] = data[:, 0] # Put prediction in target column slot
+            return dummy
+
+        # Reconstruct full-dimension data, inverse transform, then slice back to target
+        preds_original = test_data.scaler.inverse_transform(pad_to_scaler(preds_reshaped, test_data.scaler))[:, -1:]
+        trues_original = test_data.scaler.inverse_transform(pad_to_scaler(trues_reshaped, test_data.scaler))[:, -1:]
+    else:
+        # Standard case: dimensions match
+        preds_original = test_data.scaler.inverse_transform(preds_reshaped)
+        trues_original = test_data.scaler.inverse_transform(trues_reshaped)
+
+    # 3. Final reshape and non-negative clipping (vital for epidemic data)
+    preds_original = preds_original.reshape(preds.shape)
+    trues_original = trues_original.reshape(trues.shape)
+    preds_original = np.clip(preds_original, 0, None)
+    trues_original = np.clip(trues_original, 0, None)
+
     # Calculate overall metrics
     print("\nCalculating metrics...")
     metrics = calculate_metrics(preds_original, trues_original)

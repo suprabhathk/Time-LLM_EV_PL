@@ -3,6 +3,7 @@ import torch.nn as nn
 
 
 class Normalize(nn.Module):
+    # The constructor initializes the parameters and settings for the normalization layer.
     def __init__(self, num_features: int, eps=1e-5, affine=False, subtract_last=False, non_norm=False):
         """
         :param num_features: the number of features or channels
@@ -18,6 +19,7 @@ class Normalize(nn.Module):
         if self.affine:
             self._init_params()
 
+    # The forward method applies normalization or denormalization based on the mode.
     def forward(self, x, mode: str):
         if mode == 'norm':
             self._get_statistics(x)
@@ -27,7 +29,7 @@ class Normalize(nn.Module):
         else:
             raise NotImplementedError
         return x
-
+    # The following methods handle parameter initialization, statistics computation, normalization, and denormalization.
     def _init_params(self):
         # initialize RevIN params: (C,)
         self.affine_weight = nn.Parameter(torch.ones(self.num_features))

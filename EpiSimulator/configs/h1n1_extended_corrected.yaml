@@ -1,0 +1,143 @@
+# ============================================
+# H1N1 Extended Epidemic Configuration (Corrected Documentation)
+# Model equations match Eames et al. (2012)
+# ============================================
+
+# NOTE: This config is identical to h1n1_extended.yaml in parameter values.
+# The Python implementation (h1n1_age_structured.py) already uses
+# the correct force of infection: λ_i = τ × Σ_j [B_ij × I_j / n_j]
+# This file exists for clarity and versioning purposes.
+
+model: H1N1_SEIR
+model_name: "h1n1_age_structured_corrected"
+description: "Extended H1N1 epidemic with correct documentation - matches Eames et al. (2012)"
+
+# ============================================
+# MODEL EQUATIONS (for reference)
+# ============================================
+# dS_i/dt = -λ_i × S_i
+# dE_i/dt = λ_i × S_i - ν × E_i
+# dI_i/dt = ν × E_i - γ × I_i
+# dR_i/dt = γ × I_i
+#
+# Where force of infection is:
+#   λ_i(t) = β × Σ_j [C_ij(t) × I_j / N_j]
+#
+# This uses PREVALENCE (I_j/N_j) in each contacted group
+# as per Eames et al. (2012) PLoS Comput Biol 8(3):e1002425
+# ============================================
+
+# ============================================
+# DISEASE DYNAMICS PARAMETERS
+# ============================================
+disease_params:
+  transmission_rate: 0.012      # β (per contact transmission probability)
+  latent_period: 1.0            # 1/ν (days in exposed state)
+  infectious_period: 4          # 1/γ (days infectious)
+
+# ============================================
+# POPULATION STRUCTURE
+# ============================================
+population:
+  age_groups:
+    - "0-18"
+    - "19-65+"
+
+  sizes: [2000, 8000]
+
+# ============================================
+# CONTACT MATRICES
+# ============================================
+contact_patterns:
+  # Term time - SLIGHTLY REDUCED contacts
+  term_time:
+    - [22.0, 10.0]    # C_11, C_12: contacts by age 0-18 with 0-18, 19-65+
+    - [3.0, 13.0]     # C_21, C_22: contacts by age 19-65+ with 0-18, 19-65+
+
+  # Holidays - reduced contacts
+  holidays:
+    - [11.0, 11.5]
+    - [2.0, 14.0]
+
+# ============================================
+# SCHOOL CALENDAR - MORE HOLIDAYS
+# ============================================
+school_calendar:
+  # More frequent breaks to slow transmission
+  term_periods:
+    - [1, 70]         # Term 1: 70 days
+    - [100, 180]      # Term 2: 81 days
+    - [210, 300]      # Term 3: 91 days
+    - [330, 365]      # Term 4: 36 days
+
+  holiday_periods:
+    - [71, 99]        # Holiday 1: 29 days
+    - [181, 209]      # Holiday 2: 29 days
+    - [301, 329]      # Holiday 3: 29 days
+
+# ============================================
+# INITIAL CONDITIONS
+# ============================================
+initial_conditions:
+  susceptible: [1990, 7970]    # More susceptibles (99.6%)
+  exposed: [0, 0]
+  infected: [1, 1]             # Small seed
+  recovered: [9, 29]           # Very low prior immunity (~0.4%)
+
+# ============================================
+# SIMULATION PARAMETERS
+# ============================================
+simulation:
+  duration: 365
+  timestep: 0.1
+  output_frequency: 1
+
+  solver:
+    method: "RK45"
+    rtol: 1.0e-6
+    atol: 1.0e-8
+
+# ============================================
+# OUTPUT SETTINGS
+# ============================================
+output:
+  path: "../dataset/synthetic/h1n1/"
+  filename: "h1n1_2group_corrected.csv"
+  save_metadata: true
+  metadata_filename: "h1n1_2group_corrected_metadata.json"
+  start_date: "2024-01-01"
+  date_format: "%Y-%m-%d"
+  save_compartments: true
+  save_totals: true
+  save_incidence: true
+  save_prevalence: true
+
+# ============================================
+# NOISE/STOCHASTICITY
+# ============================================
+noise:
+  enabled: false
+  type: "poisson"
+  level: 0.1
+  seed: 42
+
+# ============================================
+# MULTIPLE RUNS
+# ============================================
+multiple_runs:
+  enabled: false
+  n_runs: 10
+
+# ============================================
+# INTERVENTIONS
+# ============================================
+interventions:
+  enabled: false
+
+# ============================================
+# VALIDATION
+# ============================================
+validation:
+  check_population_constant: true
+  check_negative_values: true
+  check_conservation: true
