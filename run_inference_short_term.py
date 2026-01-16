@@ -122,8 +122,8 @@ else:
     raise ValueError(f"Unexpected prediction shape: {preds.shape}")
 
 # Inverse transform
-preds_original = data_set.scaler.inverse_transform(preds_reshaped)
-trues_original = data_set.scaler.inverse_transform(trues_reshaped)
+preds_original = data_set.inverse_transform(preds_reshaped)
+trues_original = data_set.inverse_transform(trues_reshaped)
 
 # Reshape back and clip to non-negative (epidemic data constraint)
 preds_original = preds_original.reshape(preds.shape)
@@ -213,7 +213,7 @@ with open(os.path.join(args.output_path, 'metrics.txt'), 'w') as f:
         f.write(f"Week {week+1:<5} | {mae:<12.2f} | {mse:<15.2f} | {rmse:<12.2f}\n")
 
 print(f"\n{'='*60}")
-print(f"✓ Results saved to {args.output_path}")
+print(f"[OK] Results saved to {args.output_path}")
 print(f"{'='*60}")
 print("\nFiles generated:")
 print(f"  - preds_scaled.npy     (scaled predictions)")

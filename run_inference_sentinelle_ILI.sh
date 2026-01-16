@@ -61,7 +61,7 @@ for PRED_LEN in "${HORIZONS[@]}"; do
     MODEL_ID="sentinelle_ILI_${PRED_LEN}week"
 
     # Find the checkpoint directory
-    CHECKPOINT_PATTERN="./checkpoints/long_term_forecast_${MODEL_ID}_TimeLLM_${DATA_NAME}_ft${FEATURES}_sl${SEQ_LEN}_ll${LABEL_LEN}_pl${PRED_LEN}_dm${D_MODEL}_nh${N_HEADS}_el${E_LAYERS}_dl${D_LAYERS}_df${D_FF}_fc3_ebtimeF_test_0-Forecast*"
+    CHECKPOINT_PATTERN="./checkpoints/long_term_forecast_${MODEL_ID}_*"
 
     CHECKPOINT_DIR=$(ls -d $CHECKPOINT_PATTERN 2>/dev/null | head -1)
 

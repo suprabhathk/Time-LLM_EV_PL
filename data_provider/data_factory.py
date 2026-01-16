@@ -14,7 +14,7 @@ data_dict = {
     'Epi_SEIR': Dataset_Custom,
     'Age_SIR': Dataset_Custom,
     'synthetic_Epi_WeinerProcess': Dataset_Custom,
-    'sentinelle_ILI_France': Dataset_Custom_Log,
+    'sentinelle_ILI_France': Dataset_Custom,
 }
 
 

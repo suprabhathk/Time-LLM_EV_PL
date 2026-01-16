@@ -14,10 +14,10 @@ echo "=========================================="
 echo ""
 
 # Dataset configuration
-DATA_PATH="sentinelle_ILI_France_1984_2025.csv"
+DATA_PATH="epidemics_30years_full.csv"
 ROOT_PATH="./"
-DATA_NAME="sentinelle_ILI_France"
-TARGET="inc"
+DATA_NAME="synthetic_Epi_WeinerProcess"
+TARGET="I_child"
 
 # Model architecture
 LLM_MODEL="GEMMA"
@@ -32,7 +32,7 @@ E_LAYERS=3
 D_LAYERS=1
 
 # Training hyperparameters
-BATCH_SIZE=16
+BATCH_SIZE=8
 LEARNING_RATE=0.0005
 TRAIN_EPOCHS=50
 PATIENCE=10
@@ -42,9 +42,9 @@ SEQ_LEN=26      # Look back 26 weeks (~6 months)
 LABEL_LEN=13    # Decoder start tokens
 
 # Feature mode
-FEATURES="S"    # Single variable forecasting
-ENC_IN=1
-DEC_IN=1
+FEATURES="MS"    # Single variable forecasting
+ENC_IN=10
+DEC_IN=10
 C_OUT=1
 
 echo "Configuration:"
