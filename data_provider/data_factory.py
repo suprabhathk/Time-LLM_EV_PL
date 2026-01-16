@@ -1,4 +1,5 @@
 from data_provider.data_loader import Dataset_ETT_hour, Dataset_ETT_minute, Dataset_Custom, Dataset_M4
+from data_provider.data_loader_log import Dataset_Custom_Log
 from torch.utils.data import DataLoader
 
 data_dict = {
@@ -13,6 +14,7 @@ data_dict = {
     'Epi_SEIR': Dataset_Custom,
     'Age_SIR': Dataset_Custom,
     'synthetic_Epi_WeinerProcess': Dataset_Custom,
+    'sentinelle_ILI_France': Dataset_Custom_Log,
 }
 
 
