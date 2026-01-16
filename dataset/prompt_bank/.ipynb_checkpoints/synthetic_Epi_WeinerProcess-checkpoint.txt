@@ -1,0 +1,178 @@
+
+================================================================================
+METHODOLOGY: 30-YEAR EPIDEMIC DATASET GENERATION (1990-2019)
+================================================================================
+
+OVERVIEW
+--------
+This dataset contains 30 independent epidemic simulations representing yearly 
+flu-like disease outbreaks from 1990 to 2019. Each epidemic is modeled as a 
+complete year-long trajectory with maximum variability to create diverse patterns 
+suitable for machine learning applications.
+
+MODEL STRUCTURE
+---------------
+Base Model: Age-Heterogeneous Stochastic SIR (Susceptible-Infected-Recovered)
+- Two age groups: Children (N=1,500,000) and Adults (N=3,500,000)
+- Compartments per age group: S (Susceptible), I (Infected), R (Recovered)
+- Stochastic dynamics: Euler-Maruyama method with time step dt=0.1 days
+
+Contact Matrix (average contacts per day):
+                Children    Adults
+    Children        18         9
+    Adults           3        12
+
+TRANSMISSION DYNAMICS
+--------------------
+Force of Infection:
+    λᵢ(t) = β(t) × Σⱼ Mᵢⱼ × Iⱼ(t)/Nⱼ
+
+where:
+- β(t) = time-varying transmission rate (see Variability section)
+- Mᵢⱼ = contact matrix element
+- Iⱼ(t)/Nⱼ = fraction infected in age group j
+
+Differential Equations (Stochastic):
+    dSᵢ = -λᵢSᵢdt - √(λᵢSᵢdt)·dWₛᵢ
+    dIᵢ = λᵢSᵢdt + √(λᵢSᵢdt)·dWₛᵢ - γᵢIᵢdt - √(γᵢIᵢdt)·dWᵢᵣ
+    dRᵢ = γᵢIᵢdt + √(γᵢIᵢdt)·dWᵢᵣ
+
+where dW represents Wiener processes (Gaussian white noise)
+
+PARAMETER VARIABILITY (KEY INNOVATION)
+---------------------------------------
+To create diverse epidemic patterns, five sources of variability were introduced:
+
+1. TRANSMISSION RATE β(t):
+   Base: β₀ = 0.022 per day
+   Year-specific multiplier: Uniform[0.6, 1.4]
+   Seasonal forcing: β(t) = β₀ × βₘᵤₗₜ × (1 + 0.3·cos(2π(t-φ)/365))
+   Result: Effective β ranges from ~0.009 to ~0.040
+
+2. RECOVERY RATE γ:
+   Variable infectious period: Uniform[3, 10] days
+   Corresponding γ: Uniform[1/10, 1/3] per day
+   Result: Some epidemics are fast (3-day infections), others slow (10-day)
+
+3. START DATES:
+   Offset from January 1: Uniform[-60, +60] days
+   Result: Epidemics begin anytime between early November and early March
+
+4. INITIAL CONDITIONS:
+   Infected children I_C(0): Uniform[1, 50]
+   Infected adults I_A(0): Uniform[1, 50]
+   Result: Variable seeding intensity
+
+5. SEASONAL PHASE SHIFT φ:
+   Phase variation: Uniform[-45, +45] days
+   Result: Peak transmission timing varies (some years early winter, others late)
+
+EPIDEMIC CLASSIFICATION
+------------------------
+Based on parameter combinations, epidemics fall into three categories:
+
+FAST: β_mult > 1.2 AND infectious period < 6 days
+      → Peak around day 20-50, sharp rise and fall
+
+MODERATE: 0.8 ≤ β_mult ≤ 1.2 OR 6 ≤ infectious period ≤ 7 days
+          → Peak around day 60-100, moderate dynamics
+
+SLOW: β_mult < 0.8 OR infectious period > 7 days
+      → Peak around day 100-200+, gradual prolonged curve
+
+SIMULATION DETAILS
+------------------
+Time span per epidemic: 365 days (full year)
+Temporal resolution: dt = 0.1 days for numerical integration
+Data sampling: Weekly (every 7 days)
+Output per epidemic: ~52 weekly observations
+Total dataset: ~1,560 observations (30 years × 52 weeks)
+
+Numerical method: Euler-Maruyama (stochastic differential equations)
+Programming: Python 3.x with NumPy for numerical computation
+
+DATASET STRUCTURE
+-----------------
+Each row represents one week of data with the following variables:
+
+TEMPORAL:
+- calendar_year: 1990-2019
+- date: Actual calendar date
+- day_of_epidemic: Day within epidemic (0-364)
+- week_of_epidemic: Week within epidemic (1-52)
+
+STATE VARIABLES (population counts):
+- S_child, I_child, R_child: Children compartments
+- S_adult, I_adult, R_adult: Adult compartments
+- total_infected: I_child + I_adult
+- total_susceptible: S_child + S_adult
+- total_recovered: R_child + R_adult
+
+PARAMETERS (year-specific):
+- beta: Current transmission rate
+- beta_multiplier: Year's β multiplier (0.6-1.4)
+- gamma: Recovery rate
+- infectious_period_days: Days infectious (3-10)
+- start_date_offset: Days from Jan 1 (-60 to +60)
+- initial_I_C, initial_I_A: Initial infections
+- phase_shift: Seasonal timing shift (-45 to +45 days)
+
+KEY ASSUMPTIONS & LIMITATIONS
+------------------------------
+✓ Homogeneous mixing within age groups
+✓ No births, deaths, or migration (closed population)
+✓ No waning immunity (R stays recovered within each year)
+✓ Independent epidemics (no carryover between years)
+✓ No interventions (vaccination, social distancing, etc.)
+✗ Does not model spatial heterogeneity
+✗ No age-specific mortality or hospitalization
+✗ No pathogen evolution or strain diversity
+
+VALIDATION & QUALITY CHECKS
+----------------------------
+Peak timing range: 20-200+ days (successfully diverse)
+Peak intensity range: ~40,000-800,000 total infected
+Epidemic classification distribution:
+  - FAST: ~30-35% of years
+  - MODERATE: ~35-45% of years  
+  - SLOW: ~25-35% of years
+
+Conservation check: S(t) + I(t) + R(t) = N for all t ✓
+Non-negativity: All compartments ≥ 0 for all t ✓
+
+INTENDED APPLICATIONS
+---------------------
+✓ Training ML models for epidemic forecasting
+✓ Time series analysis and pattern recognition
+✓ Testing anomaly detection algorithms
+✓ Benchmarking prediction methods
+✓ Educational demonstrations of epidemic variability
+✓ Parameter sensitivity analysis
+
+REPRODUCIBILITY
+---------------
+Random seed: 42 (NumPy)
+Generated: 2026-01-09
+Python packages: numpy, pandas, matplotlib, datetime
+
+FILES GENERATED
+---------------
+1. epidemics_30years_MAXIMUM_VARIABILITY.csv (main dataset)
+2. epidemic_peaks_MAXIMUM_VARIABILITY.csv (peak statistics)
+3. Multiple visualization PNG files
+
+CITATION
+--------
+Dataset generated using age-heterogeneous stochastic SIR model based on:
+- Allen et al. (2008) for SDE transformation methodology
+- Mossong et al. (2008) for contact matrix framework
+- Standard SIR/SEIR compartmental modeling literature
+
+CONTACT
+-------
+For questions about methodology or data usage, refer to accompanying 
+documentation and code notebooks.
+
+================================================================================
+END OF METHODOLOGY
+================================================================================

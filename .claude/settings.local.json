@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc:*)",
+      "Bash(pdfinfo:*)",
+      "Bash(mdls:*)",
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(xargs:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(sort:*)",
+      "Bash(awk:*)",
+      "Bash(/opt/anaconda3/bin/python:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -60,7 +60,6 @@ parser.add_argument('--seq_len', type=int, default=96, help='input sequence leng
 parser.add_argument('--label_len', type=int, default=48, help='start token length')
 parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
 parser.add_argument('--seasonal_patterns', type=str, default='Monthly', help='subset for M4')
-parser.add_argument('--inverse', action='store_true', help='inverse output data', default=False)
 
 # model define
 parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
