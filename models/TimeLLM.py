@@ -8,6 +8,8 @@ from transformers import LlamaConfig, LlamaModel, LlamaTokenizer, GPT2Config, GP
 from layers.Embed import PatchEmbedding
 import transformers
 from layers.StandardNorm import Normalize
+# Load domain knowledge from txt file
+from utils.tools import load_content
 
 transformers.logging.set_verbosity_error()
 
@@ -39,6 +41,8 @@ class Model(nn.Module):
         self.d_llm = configs.llm_dim
         self.patch_len = configs.patch_len
         self.stride = configs.stride
+        self.description = load_content(configs)
+        print(f"✓ Loaded domain knowledge: {len(self.description)} characters")
 
         if configs.llm_model == 'LLAMA':
             # self.llama_config = LlamaConfig.from_pretrained('/mnt/alps/modelhub/pretrained_model/LLaMA/7B_hf/')
@@ -236,10 +240,6 @@ class Model(nn.Module):
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
 
-        # Define your global stats (from your Methodology)
-        mu = 19603.73
-        sigma = 74939.89
-
         x_enc = self.normalize_layers(x_enc, 'norm')
 
         B, T, N = x_enc.size()
@@ -253,17 +253,33 @@ class Model(nn.Module):
 
         prompt = []
         for b in range(x_enc.shape[0]):
-            # Use .item() to get the scalar value from the tensor
-            # We use f-string formatting :.0f to keep the prompt clean of scientific notation
-            r_min = (min_values[b].item() * sigma) + mu
-            r_max = (max_values[b].item() * sigma) + mu
+            # Use z-score statistics directly (no reverse scaling needed!)
+            z_min = min_values[b].item()
+            z_max = max_values[b].item()
+            z_median = medians[b].item()
             
+            if trends[b] > 0:
+                phase = "GROWTH PHASE (exponential increase)"
+                guidance = "Expect continued rise following dI/dt = (β·S/N - γ)·I"
+            else:
+                phase = "DECLINE PHASE (exponential decay)"
+                guidance = "Expect decay following dI/dt ≈ -γ·I"
+            
+            # Build comprehensive prompt using txt file
             prompt_ = (
-                f"<|start_prompt|>Dataset: Stochastic SIR Epidemic (5M population). "
-                f"Task: Forecast next {self.pred_len} weeks given {self.seq_len} weeks history. "
-                f"Input Statistics (Real Scale): min {r_min:.0f}, max {r_max:.0f} cases. "
-                f"Dynamics: Infectious period 3-10 days, seasonal cos-forcing. "
-                f"Trend: {'upward' if trends[b] > 0 else 'downward'}.<|<end_prompt>|>"
+                f"<|start_prompt|>"
+                f"{self.description}\n\n"  # Full domain knowledge from txt file
+                f"==== CURRENT FORECAST TASK ====\n"
+                f"Objective: Predict next {self.pred_len} weeks of I_child\n"
+                f"Input: {self.seq_len} weeks of historical data\n\n"
+                f"Observed Statistics:\n"
+                f"  • Range: {z_min:.0f} to {z_max:.0f} cases\n"
+                f"  • Median: {z_median:.2f} std deviations\n"
+                f"  • Current phase: {phase}\n"
+                f"  • Expected dynamics: {guidance}\n\n"
+                f"Apply SIR equations with seasonal β(t) and Wiener stochasticity.\n"
+                f"Generate {self.pred_len} realistic weekly forecasts.\n"
+                f"<|<end_prompt>|>"
             )
             prompt.append(prompt_)
 

@@ -1,178 +1,211 @@
+EPIDEMIC SURVEILLANCE DATA - Stochastic SIR Model with Regular Seasonal Forcing
 
-================================================================================
-METHODOLOGY: 30-YEAR EPIDEMIC DATASET GENERATION (1990-2019)
-================================================================================
+==== POPULATION AND STRUCTURE ====
+Total Population: 5,000,000 individuals
+Age Stratification: 
+  - Children (N_C): Ages 0-18
+  - Adults (N_A): Ages 19+
+Compartments per age group: Susceptible (S), Infected (I), Recovered (R)
+Target Variable: I_child (number of infectious children per week)
 
-OVERVIEW
---------
-This dataset contains 30 independent epidemic simulations representing yearly 
-flu-like disease outbreaks from 1990 to 2019. Each epidemic is modeled as a 
-complete year-long trajectory with maximum variability to create diverse patterns 
-suitable for machine learning applications.
+==== MATHEMATICAL MODEL ====
 
-MODEL STRUCTURE
----------------
-Base Model: Age-Heterogeneous Stochastic SIR (Susceptible-Infected-Recovered)
-- Two age groups: Children (N=1,500,000) and Adults (N=3,500,000)
-- Compartments per age group: S (Susceptible), I (Infected), R (Recovered)
-- Stochastic dynamics: Euler-Maruyama method with time step dt=0.1 days
+Age-Structured SIR Dynamics:
 
-Contact Matrix (average contacts per day):
-                Children    Adults
-    Children        18         9
-    Adults           3        12
+For children (C) and adults (A):
 
-TRANSMISSION DYNAMICS
---------------------
-Force of Infection:
-    λᵢ(t) = β(t) × Σⱼ Mᵢⱼ × Iⱼ(t)/Nⱼ
+$$\frac{dS_C}{dt} = -\lambda_C(t) \cdot S_C + \sqrt{\lambda_C(t) \cdot S_C} \cdot \xi_1(t)$$
 
-where:
-- β(t) = time-varying transmission rate (see Variability section)
-- Mᵢⱼ = contact matrix element
-- Iⱼ(t)/Nⱼ = fraction infected in age group j
+$$\frac{dI_C}{dt} = \lambda_C(t) \cdot S_C - \gamma \cdot I_C + \sqrt{\lambda_C(t) \cdot S_C} \cdot \xi_2(t) - \sqrt{\gamma \cdot I_C} \cdot \xi_3(t)$$
 
-Differential Equations (Stochastic):
-    dSᵢ = -λᵢSᵢdt - √(λᵢSᵢdt)·dWₛᵢ
-    dIᵢ = λᵢSᵢdt + √(λᵢSᵢdt)·dWₛᵢ - γᵢIᵢdt - √(γᵢIᵢdt)·dWᵢᵣ
-    dRᵢ = γᵢIᵢdt + √(γᵢIᵢdt)·dWᵢᵣ
+$$\frac{dR_C}{dt} = \gamma \cdot I_C + \sqrt{\gamma \cdot I_C} \cdot \xi_4(t)$$
 
-where dW represents Wiener processes (Gaussian white noise)
+And similarly for adults (A).
 
-PARAMETER VARIABILITY (KEY INNOVATION)
----------------------------------------
-To create diverse epidemic patterns, five sources of variability were introduced:
+Where:
+- S_C(t), S_A(t): Susceptible children and adults
+- I_C(t), I_A(t): Infectious children and adults  
+- R_C(t), R_A(t): Recovered (immune) children and adults
+- ξ_i(t): Independent Wiener process noise terms (Gaussian white noise)
+- λ_g(t): Force of infection on age group g
+- γ: Recovery rate (constant across age groups)
 
-1. TRANSMISSION RATE β(t):
-   Base: β₀ = 0.022 per day
-   Year-specific multiplier: Uniform[0.6, 1.4]
-   Seasonal forcing: β(t) = β₀ × βₘᵤₗₜ × (1 + 0.3·cos(2π(t-φ)/365))
-   Result: Effective β ranges from ~0.009 to ~0.040
+Force of Infection (Age-Structured Mixing):
 
-2. RECOVERY RATE γ:
-   Variable infectious period: Uniform[3, 10] days
-   Corresponding γ: Uniform[1/10, 1/3] per day
-   Result: Some epidemics are fast (3-day infections), others slow (10-day)
+$$\lambda_C(t) = \beta(t) \left(\frac{I_C}{N_C} + c_{CA} \frac{I_A}{N_A}\right)$$
 
-3. START DATES:
-   Offset from January 1: Uniform[-60, +60] days
-   Result: Epidemics begin anytime between early November and early March
+$$\lambda_A(t) = \beta(t) \left(c_{AC} \frac{I_C}{N_C} + \frac{I_A}{N_A}\right)$$
 
-4. INITIAL CONDITIONS:
-   Infected children I_C(0): Uniform[1, 50]
-   Infected adults I_A(0): Uniform[1, 50]
-   Result: Variable seeding intensity
+- β(t): Time-varying transmission rate with seasonal forcing
+- c_CA: Cross-age mixing coefficient (adult-to-child transmission)
+- c_AC: Cross-age mixing coefficient (child-to-adult transmission)
+- Within-group transmission coefficient = 1 (normalized)
 
-5. SEASONAL PHASE SHIFT φ:
-   Phase variation: Uniform[-45, +45] days
-   Result: Peak transmission timing varies (some years early winter, others late)
+Seasonal Forcing (Regular Annual Pattern):
 
-EPIDEMIC CLASSIFICATION
-------------------------
-Based on parameter combinations, epidemics fall into three categories:
+$$\beta(t) = \beta_0 \left(1 + \epsilon \cos\left(\frac{2\pi (t - t_{peak})}{52}\right)\right)$$
 
-FAST: β_mult > 1.2 AND infectious period < 6 days
-      → Peak around day 20-50, sharp rise and fall
+Implementation Parameters:
+- β₀: Baseline transmission rate (CONSTANT across all years)
+- ε: Seasonal forcing amplitude (fixed, no year-to-year variation)
+- t_peak: Peak timing in winter (FIXED, no annual phase shifts)
+- Period: 52 weeks (annual cycle)
+- Physical interpretation: Higher contact rates during winter months (schools, indoor activities)
 
-MODERATE: 0.8 ≤ β_mult ≤ 1.2 OR 6 ≤ infectious period ≤ 7 days
-          → Peak around day 60-100, moderate dynamics
+Key Simplification: Unlike real-world data, this synthetic data has:
+  • Consistent epidemic intensity every year (β₀ fixed)
+  • Regular peak timing (no random delays)
+  • Predictable seasonal pattern (phase shift = 0)
 
-SLOW: β_mult < 0.8 OR infectious period > 7 days
-      → Peak around day 100-200+, gradual prolonged curve
+==== STOCHASTIC COMPONENT (EULER-MARUYAMA DISCRETIZATION) ====
 
-SIMULATION DETAILS
-------------------
-Time span per epidemic: 365 days (full year)
-Temporal resolution: dt = 0.1 days for numerical integration
-Data sampling: Weekly (every 7 days)
-Output per epidemic: ~52 weekly observations
-Total dataset: ~1,560 observations (30 years × 52 weeks)
+Wiener Process Implementation:
 
-Numerical method: Euler-Maruyama (stochastic differential equations)
-Programming: Python 3.x with NumPy for numerical computation
+At each time step dt:
 
-DATASET STRUCTURE
------------------
-Each row represents one week of data with the following variables:
+$$dW_i = \mathcal{N}(0, 1) \quad \text{for } i = 1, 2, 3, 4$$
 
-TEMPORAL:
-- calendar_year: 1990-2019
-- date: Actual calendar date
-- day_of_epidemic: Day within epidemic (0-364)
-- week_of_epidemic: Week within epidemic (1-52)
+$$dS_C = -dt \cdot \lambda_C S_C - \sqrt{dt \cdot \max(0, \lambda_C S_C)} \cdot dW_1$$
 
-STATE VARIABLES (population counts):
-- S_child, I_child, R_child: Children compartments
-- S_adult, I_adult, R_adult: Adult compartments
-- total_infected: I_child + I_adult
-- total_susceptible: S_child + S_adult
-- total_recovered: R_child + R_adult
+$$dI_C = dt \cdot (\lambda_C S_C - \gamma I_C) + \sqrt{dt \cdot \max(0, \lambda_C S_C)} \cdot dW_2 - \sqrt{dt \cdot \max(0, \gamma I_C)} \cdot dW_3$$
 
-PARAMETERS (year-specific):
-- beta: Current transmission rate
-- beta_multiplier: Year's β multiplier (0.6-1.4)
-- gamma: Recovery rate
-- infectious_period_days: Days infectious (3-10)
-- start_date_offset: Days from Jan 1 (-60 to +60)
-- initial_I_C, initial_I_A: Initial infections
-- phase_shift: Seasonal timing shift (-45 to +45 days)
+$$dR_C = dt \cdot \gamma I_C + \sqrt{dt \cdot \max(0, \gamma I_C)} \cdot dW_4$$
 
-KEY ASSUMPTIONS & LIMITATIONS
-------------------------------
-✓ Homogeneous mixing within age groups
-✓ No births, deaths, or migration (closed population)
-✓ No waning immunity (R stays recovered within each year)
-✓ Independent epidemics (no carryover between years)
-✓ No interventions (vaccination, social distancing, etc.)
-✗ Does not model spatial heterogeneity
-✗ No age-specific mortality or hospitalization
-✗ No pathogen evolution or strain diversity
+Stochastic Properties:
+- Noise intensity scales with √(rate × population): realistic for demographic stochasticity
+- Each transition (S→I, I→R) has independent noise
+- max(0, ·) ensures non-negative arguments under square root
+- Variance proportional to process intensity (higher during epidemics)
+- This is a diffusion approximation to the exact stochastic birth-death process
 
-VALIDATION & QUALITY CHECKS
-----------------------------
-Peak timing range: 20-200+ days (successfully diverse)
-Peak intensity range: ~40,000-800,000 total infected
-Epidemic classification distribution:
-  - FAST: ~30-35% of years
-  - MODERATE: ~35-45% of years  
-  - SLOW: ~25-35% of years
+Physical Meaning:
+- Captures random fluctuations in individual infection/recovery events
+- Important when populations are small or near extinction
+- Creates realistic variability around deterministic SIR trajectory
+- Noise level automatically adapts to epidemic phase
 
-Conservation check: S(t) + I(t) + R(t) = N for all t ✓
-Non-negativity: All compartments ≥ 0 for all t ✓
+==== FIXED PARAMETERS (CONSISTENT ACROSS ALL YEARS) ====
 
-INTENDED APPLICATIONS
----------------------
-✓ Training ML models for epidemic forecasting
-✓ Time series analysis and pattern recognition
-✓ Testing anomaly detection algorithms
-✓ Benchmarking prediction methods
-✓ Educational demonstrations of epidemic variability
-✓ Parameter sensitivity analysis
+Transmission Dynamics:
+- Baseline β₀: FIXED (intensity_multiplier = 1.0 for all years)
+- Seasonal amplitude ε: FIXED (no variation)
+- Basic reproduction number: R₀ = β₀/γ (constant)
 
-REPRODUCIBILITY
----------------
-Random seed: 42 (NumPy)
-Generated: 2026-01-09
-Python packages: numpy, pandas, matplotlib, datetime
+Recovery Rate:
+- γ = 1/5 = 0.2 day⁻¹ (FIXED across all years)
+- Infectious period: 5 days (constant)
+- No variation in outbreak speed
 
-FILES GENERATED
----------------
-1. epidemics_30years_MAXIMUM_VARIABILITY.csv (main dataset)
-2. epidemic_peaks_MAXIMUM_VARIABILITY.csv (peak statistics)
-3. Multiple visualization PNG files
+Initial Conditions (Every Year):
+- I_C(0) = 20 infectious children (FIXED)
+- I_A(0) = 20 infectious adults (FIXED)
+- S_C(0), S_A(0): Set to maintain population balance
+- R_C(0), R_A(0): Computed from conservation
 
-CITATION
---------
-Dataset generated using age-heterogeneous stochastic SIR model based on:
-- Allen et al. (2008) for SDE transformation methodology
-- Mossong et al. (2008) for contact matrix framework
-- Standard SIR/SEIR compartmental modeling literature
+Seasonal Timing:
+- Peak offset: 0 weeks (FIXED, no random delays)
+- Phase shift: 0 (seasonality centered consistently)
+- Winter peak occurs at same calendar time each year
 
-CONTACT
--------
-For questions about methodology or data usage, refer to accompanying 
-documentation and code notebooks.
+==== EPIDEMIC DYNAMICS ====
 
-================================================================================
-END OF METHODOLOGY
-================================================================================
+1. Exponential Growth Phase:
+   When S is large and β(t) > γ, infections grow exponentially
+   Growth rate: r = β·S/N - γ
+   Doubling time: T_double ≈ ln(2)/r ≈ 3-7 days
+
+2. Seasonal Peak:
+   Maximum transmission during winter: β_max = β₀(1 + ε)
+   Peak infections occur ~2-4 weeks after maximum β(t)
+   Timing is REGULAR (same weeks each year)
+
+3. Epidemic Decline:
+   Post-peak decay as susceptibles deplete
+   Decay rate: approximately γ (recovery rate)
+   Half-life: T_half ≈ ln(2)/γ ≈ 3.5 days
+
+4. Summer Trough:
+   Minimum transmission: β_min = β₀(1 - ε)
+   Low-level endemic transmission
+   Stochastic fadeout possible
+
+5. Inter-Annual Pattern:
+   Because initial conditions reset to I=20 each year and parameters are fixed:
+   • Epidemic curves are SIMILAR year-to-year
+   • Main variation comes from Wiener noise only
+   • No long-term memory or immunity buildup between years
+   • Predictable seasonal rhythm
+
+==== STOCHASTIC EFFECTS ====
+
+Sources of Randomness:
+- Demographic stochasticity: √(rate · count) noise on each transition
+- Independent noise for S→I and I→R transitions
+- Wiener increments dW ~ N(0,1) at each time step
+
+Impact on Dynamics:
+- Low prevalence (I < 100): Large relative fluctuations, possible extinction
+- High prevalence (I > 1000): Noise smaller relative to signal
+- Epidemic peak: Moderate stochasticity around deterministic trajectory
+- Endemic periods: High relative variability
+
+Year-to-Year Consistency:
+- Macro parameters DO NOT vary (β₀, γ, timing all fixed)
+- Only source of inter-annual variation is stochastic noise
+- Results in REGULAR seasonal pattern with random micro-fluctuations
+- Much more predictable than real-world epidemics
+
+==== FORECASTING TASK ====
+
+Objective: Predict future I_child trajectory for public health planning
+
+Input: Historical weekly time series of I_child
+Output: Forecast next 1, 2, 4, or 8 weeks ahead
+
+Model Advantages for Forecasting:
+1. Regular seasonality: Peak timing is consistent (easier to predict)
+2. Fixed parameters: No regime shifts or parameter drift
+3. Consistent intensity: Epidemic magnitude similar year-to-year
+4. Moderate noise: Wiener process adds realism without overwhelming signal
+
+Forecasting Strategy:
+- Exploit regular 52-week seasonal cycle
+- Recognize growth/decline phases from trend
+- Account for Wiener noise uncertainty
+- Leverage consistent peak timing
+
+Key Patterns to Detect:
+1. Seasonal phase: Winter (high β) vs Summer (low β)
+2. Epidemic phase: Growth (S large) vs Decline (S depleted) vs Endemic (equilibrium)
+3. Trend direction: Exponential rise vs exponential decay
+4. Noise level: Higher uncertainty during rapid transitions
+
+Physical Constraints:
+- 0 ≤ I_child ≤ N_child (non-negative, bounded)
+- Exponential dynamics during growth/decline (not linear)
+- Seasonal modulation superimposed on epidemic curve
+- Stochastic fluctuations scale with √I
+
+==== DATA CHARACTERISTICS ====
+
+Temporal Resolution: Weekly aggregated counts
+Observation Period: 30 years (1,560 weeks)
+
+Typical Ranges:
+- Summer baseline: 50-500 infectious children
+- Winter epidemic peak: 5,000-80,000 infectious children  
+- Variation: Primarily from stochastic noise (macro parameters fixed)
+
+Statistical Properties:
+- Strong 52-week autocorrelation (regular seasonality)
+- Exponential growth/decay phases (heavy right tail)
+- Heteroskedasticity: Variance ∝ √I (Wiener process property)
+- Moderate zero-inflation during deep summer troughs
+
+Key Difference from Real Data:
+- MUCH MORE REGULAR than actual surveillance data
+- No parameter drift or external shocks
+- Predictable inter-annual pattern
+- Ideal for testing forecasting methods under controlled conditions
+
+This synthetic dataset represents a simplified but realistic epidemic model suitable for developing and validating time series forecasting algorithms for infectious disease surveillance.
