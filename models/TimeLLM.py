@@ -253,32 +253,26 @@ class Model(nn.Module):
 
         prompt = []
         for b in range(x_enc.shape[0]):
-            # Use z-score statistics directly (no reverse scaling needed!)
             z_min = min_values[b].item()
             z_max = max_values[b].item()
             z_median = medians[b].item()
-            
+
+            # Determine epidemic phase from normalized data
             if trends[b] > 0:
-                phase = "GROWTH PHASE (exponential increase)"
-                guidance = "Expect continued rise following dI/dt = (β·S/N - γ)·I"
+                phase = "GROWTH"
+                guidance = "Expect rise via dI/dt=(βS/N-γ)I"
             else:
-                phase = "DECLINE PHASE (exponential decay)"
-                guidance = "Expect decay following dI/dt ≈ -γ·I"
-            
-            # Build comprehensive prompt using txt file
+                phase = "DECLINE"
+                guidance = "Expect decay via dI/dt≈-γI"
+
+            # Minimal domain knowledge prompt (~250 chars)
             prompt_ = (
                 f"<|start_prompt|>"
-                f"{self.description}\n\n"  # Full domain knowledge from txt file
-                f"==== CURRENT FORECAST TASK ====\n"
-                f"Objective: Predict next {self.pred_len} weeks of I_child\n"
-                f"Input: {self.seq_len} weeks of historical data\n\n"
-                f"Observed Statistics:\n"
-                f"  • Range: {z_min:.0f} to {z_max:.0f} cases\n"
-                f"  • Median: {z_median:.2f} std deviations\n"
-                f"  • Current phase: {phase}\n"
-                f"  • Expected dynamics: {guidance}\n\n"
-                f"Apply SIR equations with seasonal β(t) and Wiener stochasticity.\n"
-                f"Generate {self.pred_len} realistic weekly forecasts.\n"
+                f"Age-structured SIR: dS/dt=-βSI/N, dI/dt=βSI/N-γI, dR/dt=γI. "
+                f"Seasonal β(t)=β₀(1+ε·cos(2πt/52)). Wiener noise sqrt(rate·count)dW. "
+                f"Fixed γ=1/5, I₀=20. "
+                f"Forecast {self.pred_len}w from {self.seq_len}w. "
+                f"Input z∈[{z_min:.2f},{z_max:.2f}], {phase}. {guidance}."
                 f"<|<end_prompt>|>"
             )
             prompt.append(prompt_)
