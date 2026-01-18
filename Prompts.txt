@@ -1,0 +1,42 @@
+Prompt 1 : 
+f"<|start_prompt|>Dataset: Stochastic SIR Epidemic (5M population). "
+            f"Task: Forecast next {self.pred_len} weeks given {self.seq_len} weeks history. "
+            f"Input Statistics (Real Scale): min {r_min:.0f}, max {r_max:.0f} cases. "
+            f"Dynamics: Infectious period 3-10 days, seasonal cos-forcing. "
+            f"Trend: {'upward' if trends[b] > 0 else 'downward'}.<|<end_prompt>|>"
+
+
+Prompt 2 : 
+f"<|start_prompt|>"
+f"Age-structured SIR: dS/dt=-βSI/N, dI/dt=βSI/N-γI, dR/dt=γI. "
+f"Seasonal β(t)=β₀(1+ε·cos(2πt/52)). Wiener noise sqrt(rate·count)dW. "
+f"Fixed γ=1/5, I₀=20. "
+f"Forecast {self.pred_len}w from {self.seq_len}w. "
+f"Input z∈[{z_min:.2f},{z_max:.2f}], {phase}. {guidance}."
+f"<|<end_prompt>|>"
+
+prompt = []
+        for b in range(x_enc.shape[0]):
+            # Use z-score statistics directly (no reverse scaling needed!)
+            z_min = min_values[b].item()
+            z_max = max_values[b].item()
+            z_median = medians[b].item()
+            
+            if trends[b] > 0:
+                phase = "GROWTH PHASE (exponential increase)"
+                guidance = "Expect continued rise following dI/dt = (β·S/N - γ)·I"
+            else:
+                phase = "DECLINE PHASE (exponential decay)"
+                guidance = "Expect decay following dI/dt ≈ -γ·I"
+            
+            # Build comprehensive prompt using txt file
+            prompt_ = (
+                f"<|start_prompt|>"
+                f"Age-structured SIR: dS/dt=-βSI/N, dI/dt=βSI/N-γI, dR/dt=γI. "
+                f"Seasonal β(t)=β₀(1+ε·cos(2πt/52)). Wiener noise sqrt(rate·count)dW. "
+                f"Fixed γ=1/5, I₀=20. "
+                f"Forecast {self.pred_len}w from {self.seq_len}w. "
+                f"Input z∈[{z_min:.2f},{z_max:.2f}], {phase}. {guidance}."
+                f"<|<end_prompt>|>"
+            )
+            prompt.append(prompt_)

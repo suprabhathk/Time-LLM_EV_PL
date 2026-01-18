@@ -1,7 +1,0 @@
-*.csv
-*.npy
-*.pkl
-checkpoints/
-results/
-__pycache__/
-*.pth

@@ -1,0 +1,32 @@
+French Influenza-Like Illness (ILI) Surveillance Data - Réseau Sentinelles
+
+This dataset contains weekly incidence rates of Influenza-Like Illness (ILI) in France from 1984 to 2025, collected by the Réseau Sentinelles surveillance network. The data represents the number of ILI cases per 100,000 population reported by sentinel general practitioners across France.
+
+Key Characteristics:
+
+Temporal Patterns:
+- Strong seasonal periodicity with winter peaks (December-February) and summer troughs (June-August)
+- Annual epidemic waves lasting 8-12 weeks during winter months
+- Inter-epidemic baseline periods with low incidence during summer
+
+Epidemic Dynamics:
+- Epidemic intensity varies significantly year-to-year (peak incidence ranges from 200 to 1,000 per 100,000)
+- Rapid exponential growth phase at epidemic onset (2-4 weeks)
+- Slower decay phase post-peak (4-8 weeks)
+- Timing of epidemic onset varies (typically between November and January)
+
+Data Quality:
+- Weekly surveillance data with consistent methodology since 1984
+- High quality surveillance system with representative national coverage
+- Minimal missing values due to robust reporting infrastructure
+
+Clinical Definition:
+ILI is defined as sudden onset of fever (>39°C) with respiratory symptoms (cough, rhinitis) and myalgia. This clinical syndrome is primarily caused by influenza viruses but can include other respiratory pathogens.
+
+Forecasting Challenges:
+- High variability in epidemic timing, duration, and intensity
+- Long-term trends influenced by population immunity, viral evolution, and vaccination coverage
+- Occasional pandemic events that deviate from seasonal patterns (e.g., 2009 H1N1 pandemic)
+- Summer baseline incidence near zero creates challenges for percentage-based metrics
+
+The target variable 'inc' represents weekly ILI incidence per 100,000 population.
