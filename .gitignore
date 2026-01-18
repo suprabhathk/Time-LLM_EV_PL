@@ -4,4 +4,4 @@
 checkpoints/
 results/
 __pycache__/
-*.pth
+*.pth*.png
