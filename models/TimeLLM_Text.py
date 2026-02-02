@@ -303,7 +303,7 @@ class Model(nn.Module):
         prompt = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=2048).input_ids
         prompt_embeddings = self.llm_model.get_input_embeddings()(prompt.to(x_enc.device))
 
-        source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0)).permute(1, 0)
+        source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0).contiguous()).permute(1, 0).contiguous()
 
         x_enc = x_enc.permute(0, 2, 1).contiguous()
         enc_out, n_vars = self.patch_embedding(x_enc.float())
@@ -361,7 +361,7 @@ class Model(nn.Module):
         prompt_tokens = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=2048).input_ids
         prompt_embeddings = self.llm_model.get_input_embeddings()(prompt_tokens.to(x_enc.device))
 
-        source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0)).permute(1, 0)
+        source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0).contiguous()).permute(1, 0).contiguous()
 
         x_enc = x_enc.permute(0, 2, 1).contiguous()
         enc_out, n_vars = self.patch_embedding(x_enc.float())
@@ -390,8 +390,9 @@ class Model(nn.Module):
         }
 
     def calcute_lags(self, x_enc):
-        q_fft = torch.fft.rfft(x_enc.permute(0, 2, 1).contiguous(), dim=-1)
-        k_fft = torch.fft.rfft(x_enc.permute(0, 2, 1).contiguous(), dim=-1)
+        x_perm = x_enc.permute(0, 2, 1).contiguous()
+        q_fft = torch.fft.rfft(x_perm, dim=-1)
+        k_fft = torch.fft.rfft(x_perm, dim=-1)
         res = q_fft * torch.conj(k_fft)
         corr = torch.fft.irfft(res, dim=-1)
         mean_value = torch.mean(corr, dim=1)
