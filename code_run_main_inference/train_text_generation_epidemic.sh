@@ -1,17 +1,14 @@
 #!/bin/bash
 
-# Text Generation Script for TimeLLM_Text with 30-year epidemic dataset
-# Uses epidemics_30years_full.csv (weekly SEIR data 1990-2020)
-#
-# IMPORTANT: Run train_text_generation_epidemic.sh FIRST to train the model!
+# TRAINING Script for TimeLLM_Text with 30-year epidemic dataset
+# Step 1: Train the model first, then use inference script
 
 # ============================
-# INFERENCE (Text Generation)
-# Run AFTER training is complete
+# TRAINING MODE
 # ============================
 python run_main_text.py \
   --task_name long_term_forecast \
-  --is_training 0 \
+  --is_training 1 \
   --root_path ./ \
   --data_path epidemics_30years_full.csv \
   --model_id epidemic_30yr_text_gen \
@@ -34,7 +31,8 @@ python run_main_text.py \
   --batch_size 8 \
   --learning_rate 0.001 \
   --llm_layers 6 \
-  --train_epochs 1 \
+  --train_epochs 10 \
+  --patience 3 \
   --percent 100 \
   --llm_model GPT2 \
   --llm_dim 768 \
@@ -43,8 +41,7 @@ python run_main_text.py \
   --patch_len 7 \
   --stride 4 \
   --n_heads 8 \
-  --output_mode text \
-  --max_new_tokens 100 \
-  --temperature 0.7 \
-  --top_p 0.9 \
-  --top_k_sampling 50
+  --output_mode forecast
+
+# Note: Training uses output_mode=forecast (numerical) to learn the reprogramming
+# After training, switch to output_mode=text for inference
