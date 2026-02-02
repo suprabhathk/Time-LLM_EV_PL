@@ -195,9 +195,9 @@ class AttentionLayer(nn.Module):
         _, S, _ = keys.shape
         H = self.n_heads
 
-        queries = self.query_projection(queries).view(B, L, H, -1)
-        keys = self.key_projection(keys).view(B, S, H, -1)
-        values = self.value_projection(values).view(B, S, H, -1)
+        queries = self.query_projection(queries).reshape(B, L, H, -1)
+        keys = self.key_projection(keys).reshape(B, S, H, -1)
+        values = self.value_projection(values).reshape(B, S, H, -1)
 
         out, attn = self.inner_attention(
             queries,
@@ -207,7 +207,7 @@ class AttentionLayer(nn.Module):
             tau=tau,
             delta=delta
         )
-        out = out.view(B, L, -1)
+        out = out.reshape(B, L, -1)
 
         return self.out_projection(out), attn
 

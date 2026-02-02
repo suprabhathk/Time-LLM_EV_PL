@@ -21,6 +21,7 @@ class FlattenHead(nn.Module):
         self.dropout = nn.Dropout(head_dropout)
 
     def forward(self, x):
+        x = x.contiguous()
         x = self.flatten(x)
         x = self.linear(x)
         x = self.dropout(x)
@@ -271,7 +272,7 @@ class Model(nn.Module):
         prompt = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=2048).input_ids
         prompt_embeddings = self.llm_model.get_input_embeddings()(prompt.to(x_enc.device))  # (batch, prompt_token, dim)
 
-        source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0)).permute(1, 0)
+        source_embeddings = self.mapping_layer(self.word_embeddings.permute(1, 0).contiguous()).permute(1, 0).contiguous()
 
         x_enc = x_enc.permute(0, 2, 1).contiguous()
         enc_out, n_vars = self.patch_embedding(x_enc.float())
@@ -280,6 +281,7 @@ class Model(nn.Module):
         dec_out = self.llm_model(inputs_embeds=llama_enc_out).last_hidden_state
         dec_out = dec_out[:, :, :self.d_ff]
 
+        dec_out = dec_out.contiguous()
         dec_out = torch.reshape(
             dec_out, (-1, n_vars, dec_out.shape[-2], dec_out.shape[-1]))
         dec_out = dec_out.permute(0, 1, 3, 2).contiguous()
@@ -319,9 +321,9 @@ class ReprogrammingLayer(nn.Module):
         S, _ = source_embedding.shape
         H = self.n_heads
 
-        target_embedding = self.query_projection(target_embedding).view(B, L, H, -1)
-        source_embedding = self.key_projection(source_embedding).view(S, H, -1)
-        value_embedding = self.value_projection(value_embedding).view(S, H, -1)
+        target_embedding = self.query_projection(target_embedding).reshape(B, L, H, -1)
+        source_embedding = self.key_projection(source_embedding).reshape(S, H, -1)
+        value_embedding = self.value_projection(value_embedding).reshape(S, H, -1)
 
         out = self.reprogramming(target_embedding, source_embedding, value_embedding)
 

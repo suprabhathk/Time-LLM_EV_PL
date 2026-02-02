@@ -16,11 +16,11 @@ class ConvLayer(nn.Module):
         self.maxPool = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
 
     def forward(self, x):
-        x = self.downConv(x.permute(0, 2, 1))
+        x = self.downConv(x.permute(0, 2, 1).contiguous())
         x = self.norm(x)
         x = self.activation(x)
         x = self.maxPool(x)
-        x = x.transpose(1, 2)
+        x = x.transpose(1, 2).contiguous()
         return x
 
 
@@ -45,8 +45,8 @@ class EncoderLayer(nn.Module):
         x = x + self.dropout(new_x)
 
         y = x = self.norm1(x)
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        y = self.dropout(self.conv2(y).transpose(-1, 1))
+        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1).contiguous())))
+        y = self.dropout(self.conv2(y).transpose(-1, 1).contiguous())
 
         return self.norm2(x + y), attn
 
@@ -110,8 +110,8 @@ class DecoderLayer(nn.Module):
         )[0])
 
         y = x = self.norm2(x)
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        y = self.dropout(self.conv2(y).transpose(-1, 1))
+        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1).contiguous())))
+        y = self.dropout(self.conv2(y).transpose(-1, 1).contiguous())
 
         return self.norm3(x + y)
 

@@ -19,7 +19,7 @@ class ProbMask():
         indicator = _mask_ex[torch.arange(B)[:, None, None],
                     torch.arange(H)[None, :, None],
                     index, :].to(device)
-        self._mask = indicator.view(scores.shape).to(device)
+        self._mask = indicator.reshape(scores.shape).to(device)
 
     @property
     def mask(self):

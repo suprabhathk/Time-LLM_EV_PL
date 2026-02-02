@@ -33,8 +33,8 @@ class moving_avg(nn.Module):
         front = x[:, 0:1, :].repeat(1, (self.kernel_size - 1) // 2, 1)
         end = x[:, -1:, :].repeat(1, (self.kernel_size - 1) // 2, 1)
         x = torch.cat([front, x, end], dim=1)
-        x = self.avg(x.permute(0, 2, 1))
-        x = x.permute(0, 2, 1)
+        x = self.avg(x.permute(0, 2, 1).contiguous())
+        x = x.permute(0, 2, 1).contiguous()
         return x
 
 
@@ -100,8 +100,8 @@ class EncoderLayer(nn.Module):
         x = x + self.dropout(new_x)
         x, _ = self.decomp1(x)
         y = x
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        y = self.dropout(self.conv2(y).transpose(-1, 1))
+        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1).contiguous())))
+        y = self.dropout(self.conv2(y).transpose(-1, 1).contiguous())
         res, _ = self.decomp2(x + y)
         return res, attn
 
@@ -170,12 +170,12 @@ class DecoderLayer(nn.Module):
         )[0])
         x, trend2 = self.decomp2(x)
         y = x
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        y = self.dropout(self.conv2(y).transpose(-1, 1))
+        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1).contiguous())))
+        y = self.dropout(self.conv2(y).transpose(-1, 1).contiguous())
         x, trend3 = self.decomp3(x + y)
 
         residual_trend = trend1 + trend2 + trend3
-        residual_trend = self.projection(residual_trend.permute(0, 2, 1)).transpose(1, 2)
+        residual_trend = self.projection(residual_trend.permute(0, 2, 1).contiguous()).transpose(1, 2).contiguous()
         return x, residual_trend
 
 
